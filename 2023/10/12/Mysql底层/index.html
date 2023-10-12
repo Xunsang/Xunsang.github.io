@@ -1,0 +1,307 @@
+<!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>MySQL底层 | Hexo</title><meta name="author" content="John Doe"><meta name="copyright" content="John Doe"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="1、mysql的系统架构  关系型数据库排名  Oracle mysql  1.sql接口 连接模块 缺点：频繁断开   连接池 通过连接池优化保持连接提供俩个参数:max_connections、max allowed_packet    123456789-- 最大连接数SHOW VARIABLESLIKE &amp;#x27;max_connections&amp;#x27;;-- 设置max_connec">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL底层">
+<meta property="og:url" content="http://example.com/2023/10/12/Mysql%E5%BA%95%E5%B1%82/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1、mysql的系统架构  关系型数据库排名  Oracle mysql  1.sql接口 连接模块 缺点：频繁断开   连接池 通过连接池优化保持连接提供俩个参数:max_connections、max allowed_packet    123456789-- 最大连接数SHOW VARIABLESLIKE &amp;#x27;max_connections&amp;#x27;;-- 设置max_connec">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png">
+<meta property="article:published_time" content="2023-10-12T05:17:42.840Z">
+<meta property="article:modified_time" content="2023-10-12T06:00:38.222Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://example.com/2023/10/12/Mysql%E5%BA%95%E5%B1%82/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: 'Copy Successful',
+    error: 'Copy Error',
+    noSupport: 'Browser Not Supported'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: 'Just now',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: 'Load More'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'MySQL底层',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-10-12 14:00:38'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">0</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">0</div></a></div><hr class="custom-hr"/></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a href="/" title="Hexo"><span class="site-name">Hexo</span></a></span><div id="menus"><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">MySQL底层</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2023-10-12T05:17:42.840Z" title="Created 2023-10-12 13:17:42">2023-10-12</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2023-10-12T06:00:38.222Z" title="Updated 2023-10-12 14:00:38">2023-10-12</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="MySQL底层"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post Views:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="1、mysql的系统架构"><a href="#1、mysql的系统架构" class="headerlink" title="1、mysql的系统架构"></a>1、mysql的系统架构</h1><img src="/2023/10/12/Mysql%E5%BA%95%E5%B1%82/image-20231009151502795.png" class="" title="image-20231009151502795">
+
+<p><strong>关系型数据库排名</strong></p>
+<ol>
+<li>Oracle</li>
+<li>mysql</li>
+</ol>
+<h2 id="1-sql接口"><a href="#1-sql接口" class="headerlink" title="1.sql接口"></a>1.sql接口</h2><ul>
+<li>连接模块<ul>
+<li>缺点：频繁断开</li>
+</ul>
+</li>
+<li>连接池<ul>
+<li>通过连接池优化保持连接提供俩个参数:max_connections、max allowed_packet</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 最大连接数</span></span><br><span class="line"><span class="keyword">SHOW</span> VARIABLESLIKE <span class="string">&#x27;max_connections&#x27;</span>;</span><br><span class="line"><span class="comment">-- 设置max_connections</span></span><br><span class="line"><span class="keyword">SET</span> <span class="keyword">GLOBAL</span> max_connections<span class="operator">=</span><span class="number">1000</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 单次最大数据报文</span></span><br><span class="line"><span class="keyword">SHOW</span> VARIABLES <span class="keyword">LIKE</span> <span class="string">&#x27;max allowed_packet&#x27;</span>;</span><br><span class="line"><span class="comment">-- 设置max_allowed_packet</span></span><br><span class="line"><span class="keyword">SET</span> <span class="keyword">GLOBAL</span> max_allowed_packet<span class="operator">=</span><span class="number">8388608</span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-SQL解析-优化"><a href="#2-SQL解析-优化" class="headerlink" title="2.SQL解析&#x2F;优化"></a>2.SQL解析&#x2F;优化</h2><p><strong>流程</strong></p>
+<p>sql：描述表、数据、索引、视图等内容的操作</p>
+<ul>
+<li>通过连接池获取sql</li>
+<li>到达sql解析器<ul>
+<li>sql解析器发现错误—&gt;报错</li>
+<li>通过解析—&gt;优化</li>
+</ul>
+</li>
+</ul>
+<h2 id="3-存储引擎"><a href="#3-存储引擎" class="headerlink" title="3.存储引擎"></a>3.存储引擎</h2><p>作用：执行sql解析器解析并优化后的sql</p>
+<p>类型：MyISAM、InnoDB、archive</p>
+<h1 id="2、mysql数据写入原理"><a href="#2、mysql数据写入原理" class="headerlink" title="2、mysql数据写入原理"></a>2、mysql数据写入原理</h1><img src="/2023/10/12/Mysql%E5%BA%95%E5%B1%82/image-20231009160040874.png" class="" title="image-20231009160040874">
+
+<h2 id="1-Undo-log"><a href="#1-Undo-log" class="headerlink" title="1.Undo log"></a>1.Undo log</h2><p>在sql操作内存时备份硬盘文件</p>
+<h2 id="2-Buffer-Pool"><a href="#2-Buffer-Pool" class="headerlink" title="2.Buffer Pool"></a>2.Buffer Pool</h2><p>一切的逻辑处理和读取写入都只操作内存中的数据</p>
+<h2 id="3-redo-log-Buffer"><a href="#3-redo-log-Buffer" class="headerlink" title="3.redo log Buffer"></a>3.redo log Buffer</h2><p>在数据进入Bufffer  Pool 后</p>
+<p>将“更新写入信息”放入内存的另一个区域Redo Log Buffer</p>
+<h2 id="4-redo-log"><a href="#4-redo-log" class="headerlink" title="4.redo log"></a>4.redo log</h2><p>为了持久化将redo log Buffer刷盘到redo.log</p>
+<p>提供多种策略	</p>
+<p>通过参数 <strong>innodb_flush_log_at_trx_commit</strong> 设置</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- Redo log刷盘策略</span></span><br><span class="line"><span class="keyword">SHOW</span> VARIABLES <span class="keyword">LIKE</span>  innodb_flush_log_at_trx_commit<span class="string">&#x27;;</span></span><br><span class="line"><span class="string">SET GLOBAL innodb_flush_log_at_trx_commit=1;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>0</p>
+<img src="/2023/10/12/Mysql%E5%BA%95%E5%B1%82/image-20231009161034920.png" class="">
+</li>
+<li><p>1</p>
+<img src="/2023/10/12/Mysql%E5%BA%95%E5%B1%82/image-20231009161004618.png" class="">
+</li>
+<li><p>2</p>
+<img src="/2023/10/12/Mysql%E5%BA%95%E5%B1%82/image-20231009161111472.png" class=""></li>
+</ul>
+<h2 id="5-BinLog"><a href="#5-BinLog" class="headerlink" title="5.BinLog"></a>5.BinLog</h2><p><strong>不属于innodb</strong></p>
+<p>在redo log 刷盘的时候 同时刷盘到BinLog</p>
+<p>给cxy提供</p>
+<p>变更历史查询、<br>数据库备份和恢复、主从<br>复制等功能</p>
+<h2 id="6-BinLog"><a href="#6-BinLog" class="headerlink" title="6.BinLog"></a>6.BinLog</h2><p>BinLong 完成刷盘后给Redo log 打上comit标签</p>
+<h2 id="8-通过线程"><a href="#8-通过线程" class="headerlink" title="8.通过线程"></a>8.通过线程</h2><img src="/2023/10/12/Mysql%E5%BA%95%E5%B1%82/image-20231009155417763.png" class="" title="image-20231009155417763">
+
+
+
+<h1 id="3、mysql的存储结构"><a href="#3、mysql的存储结构" class="headerlink" title="3、mysql的存储结构"></a>3、mysql的存储结构</h1><img src="/2023/10/12/Mysql%E5%BA%95%E5%B1%82/image-20231009153656791.png" class="" title="image-20231009153656791">
+
+<p>mysql8的frm文件和idb文件合并到一起了</p>
+<p>t.frm	</p>
+<ul>
+<li>存储表结构等信息</li>
+</ul>
+<h2 id="1-表空间"><a href="#1-表空间" class="headerlink" title="1.表空间"></a>1.表空间</h2><p>控制是否为每个表建立表空间文件</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 开启 每个表都创建表空间文件]</span></span><br><span class="line"><span class="keyword">SET</span> @<span class="variable">@global</span>.innodb_file_per_table <span class="operator">=</span> <span class="keyword">ON</span>;</span><br><span class="line"><span class="comment">-- 查看 每个表都创建表空间文件]状态</span></span><br><span class="line"><span class="keyword">SHOW</span> VARIABLES <span class="string">&#x27;LIKEinnodb_file_per_table&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>独立表空间<ul>
+<li>t.ibd <ul>
+<li>存储数据和索引</li>
+<li>MySQL 5.7 以后才会为每个表生成，且名字为“独立表空间”</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>系统表空间<ul>
+<li>数据字典、DoubleWrite Buffer 、Change Buffer 、Undo Log</li>
+<li>MySQL 5.7 之前存储数据和索引存储在“系统表空间” （共享表空间）即所有表共享同一个物理表空间文件</li>
+</ul>
+</li>
+<li>undo表空间，即：indodb_dundo.ibu</li>
+<li>通用表空间，即： diy.ibd</li>
+<li>临时表空间，即： ibtmp1</li>
+</ul>
+<h2 id="2-页-行"><a href="#2-页-行" class="headerlink" title="2.页+行"></a>2.页+行</h2><p>页</p>
+<ul>
+<li><p>innodb中内存和磁盘交互的最小存储单元</p>
+</li>
+<li><p>页的地址是连续的</p>
+</li>
+<li><p>大小固定16kb</p>
+</li>
+<li><p>16种类型的页，常用”索引页“ 用数据行填充但共同包含：</p>
+<ul>
+<li>file header</li>
+<li>file trailer</li>
+</ul>
+</li>
+<li><p>与索引b+树对应</p>
+</li>
+</ul>
+<p>行</p>
+<ul>
+<li><p>共有4类</p>
+</li>
+<li><p>&lt;&#x3D;8kb 大小不固定</p>
+</li>
+<li><p>5.7默认dynamic类型</p>
+</li>
+<li><p>建表时可以通过row format参数指定行的类型</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 查看某表的行类型</span></span><br><span class="line"><span class="keyword">SELECT</span> t.SPACE,.NAME,t.ROW_FORMAT</span><br><span class="line"><span class="keyword">FROM</span> information_schema.INNODB_SYS_TABLESPACES t</span><br><span class="line"><span class="comment">-- name : 库名/表名</span></span><br><span class="line"><span class="keyword">WHERE</span> name <span class="operator">=</span> <span class="string">&#x27;fullstars/test&#x27;</span>;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="3-区"><a href="#3-区" class="headerlink" title="3.区"></a>3.区</h2><ul>
+<li><p>避免磁头移动，保证读取的数据是连续的，提升读取效率</p>
+</li>
+<li><p>固定1mb，存放64个连续的页</p>
+</li>
+<li><p>可以放到 buffer pool 提高速度</p>
+</li>
+<li><p>8.0前建表只产生6个页16*6&#x3D;96kb，不产生区</p>
+<p>8.0后建表产生7个页16*7&#x3D;102kb，放在碎片区，不产生区</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span></span><br><span class="line"><span class="comment">-- 表空间和区条目信息</span></span><br><span class="line">page <span class="keyword">offset</span> <span class="number">00000000</span>，page type <span class="operator">&lt;</span>File Space Header<span class="operator">&gt;</span></span><br><span class="line"><span class="comment">-- Change Buffer 相关信息</span></span><br><span class="line">page <span class="keyword">offset</span> <span class="number">00000001</span>，page type <span class="operator">&lt;</span><span class="keyword">Insert</span> Buffer Bitmap<span class="operator">&gt;</span></span><br><span class="line"><span class="comment">-- 段信息</span></span><br><span class="line">page <span class="keyword">offset</span> <span class="number">00000002</span>，page type <span class="operator">&lt;</span>File Segment inode<span class="operator">&gt;</span></span><br><span class="line"><span class="comment">-- 索引根信息</span></span><br><span class="line">page <span class="keyword">offset</span> <span class="number">00000003</span>，page type <span class="operator">&lt;</span>B<span class="operator">-</span>tree Node<span class="operator">&gt;</span>， page level <span class="operator">&lt;</span><span class="number">0000</span><span class="operator">&gt;</span></span><br><span class="line"><span class="comment">-- 空闲页，即：可用页</span></span><br><span class="line">page <span class="keyword">offset</span> <span class="number">00000000</span>，page type <span class="operator">&lt;</span>Freshly Allocated Page<span class="operator">&gt;</span></span><br><span class="line">page <span class="keyword">offset</span> <span class="number">00000000</span>，page type <span class="operator">&lt;</span>Freshly Allocated Page<span class="operator">&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>每次增加1页，当满32页后续会申请完整的区来存储</p>
+</li>
+</ul>
+<h2 id="4-组-段"><a href="#4-组-段" class="headerlink" title="4.组+段"></a>4.组+段</h2><p><strong>组</strong></p>
+<ul>
+<li><p>256区组成一个组，256MB</p>
+</li>
+<li><p>1组1区的前4页比较特殊，即：<img src="/2023/10/12/Mysql%E5%BA%95%E5%B1%82/image-20231009201618360.png" class="" title="image-20231009201618360"></p>
+<p>其他的区的前2页为：</p>
+<p>XDES<br>区组条目信息</p>
+<p>Insert Buffer<br>Bitmap<br>Change buffer相关信息</p>
+</li>
+<li><p>innodb 通过区组快速定位到区</p>
+</li>
+</ul>
+<img src="/2023/10/12/Mysql%E5%BA%95%E5%B1%82/image-20231009202158031.png" class="" title="image-20231009202158031">
+
+<p><strong>段</strong></p>
+<ul>
+<li>的主要作用是用来区分不同功能的“区”<br>和在碎片区中<br>的“页</li>
+<li>非叶子结点段<br>non-leaf node segment</li>
+<li>叶子结点段<br>lcaf node segment</li>
+<li>与我们常说的B+树索引中的叶子、非叶子结点相对应</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>Author: </span><span class="post-copyright-info"><a href="http://example.com">John Doe</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>Link: </span><span class="post-copyright-info"><a href="http://example.com/2023/10/12/Mysql%E5%BA%95%E5%B1%82/">http://example.com/2023/10/12/Mysql%E5%BA%95%E5%B1%82/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2023/10/12/hello-world/" title="Hello World"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">Next</div><div class="next_info">Hello World</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">John Doe</div><div class="author-info__description"></div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">0</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Contents</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1%E3%80%81mysql%E7%9A%84%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84"><span class="toc-number">1.</span> <span class="toc-text">1、mysql的系统架构</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-sql%E6%8E%A5%E5%8F%A3"><span class="toc-number">1.1.</span> <span class="toc-text">1.sql接口</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-SQL%E8%A7%A3%E6%9E%90-%E4%BC%98%E5%8C%96"><span class="toc-number">1.2.</span> <span class="toc-text">2.SQL解析&#x2F;优化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E"><span class="toc-number">1.3.</span> <span class="toc-text">3.存储引擎</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2%E3%80%81mysql%E6%95%B0%E6%8D%AE%E5%86%99%E5%85%A5%E5%8E%9F%E7%90%86"><span class="toc-number">2.</span> <span class="toc-text">2、mysql数据写入原理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-Undo-log"><span class="toc-number">2.1.</span> <span class="toc-text">1.Undo log</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-Buffer-Pool"><span class="toc-number">2.2.</span> <span class="toc-text">2.Buffer Pool</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-redo-log-Buffer"><span class="toc-number">2.3.</span> <span class="toc-text">3.redo log Buffer</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-redo-log"><span class="toc-number">2.4.</span> <span class="toc-text">4.redo log</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-BinLog"><span class="toc-number">2.5.</span> <span class="toc-text">5.BinLog</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-BinLog"><span class="toc-number">2.6.</span> <span class="toc-text">6.BinLog</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-%E9%80%9A%E8%BF%87%E7%BA%BF%E7%A8%8B"><span class="toc-number">2.7.</span> <span class="toc-text">8.通过线程</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3%E3%80%81mysql%E7%9A%84%E5%AD%98%E5%82%A8%E7%BB%93%E6%9E%84"><span class="toc-number">3.</span> <span class="toc-text">3、mysql的存储结构</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E8%A1%A8%E7%A9%BA%E9%97%B4"><span class="toc-number">3.1.</span> <span class="toc-text">1.表空间</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E9%A1%B5-%E8%A1%8C"><span class="toc-number">3.2.</span> <span class="toc-text">2.页+行</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E5%8C%BA"><span class="toc-number">3.3.</span> <span class="toc-text">3.区</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-%E7%BB%84-%E6%AE%B5"><span class="toc-number">3.4.</span> <span class="toc-text">4.组+段</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/12/Mysql%E5%BA%95%E5%B1%82/" title="MySQL底层">MySQL底层</a><time datetime="2023-10-12T05:17:42.840Z" title="Created 2023-10-12 13:17:42">2023-10-12</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/12/hello-world/" title="Hello World">Hello World</a><time datetime="2023-10-12T05:16:21.170Z" title="Created 2023-10-12 13:16:21">2023-10-12</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2023 By John Doe</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="Toggle Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between Single-column and Double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
